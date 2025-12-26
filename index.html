@@ -1,113 +1,190 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl" data-lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>شب یلدا</title>
+    <meta name="description" content="جشن یلدا - شب چله - دریافت هدیه">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    
+    <!-- Google Fonts for Persian and English -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to CSS file -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- صفحه ورودی -->
-        <div id="welcomeScreen" class="welcome-screen active">
-            <div class="background-elements">
-                <img src="assets/images/pomegranate.png" class="floating-fruit pom-1" alt="Pomegranate">
-                <img src="assets/images/watermelon.png" class="floating-fruit water-1" alt="Watermelon">
-                <img src="assets/images/pomegranate.png" class="floating-fruit pom-2" alt="Pomegranate">
-                <img src="assets/images/watermelon.png" class="floating-fruit water-2" alt="Watermelon">
-            </div>
-
-            <div class="card">
-                <div class="logo">
-                    <img src="assets/images/logo.png" alt="ON VPN Logo">
-                </div>
-                <h1>Happy Yalda Night</h1>
-                <p class="subtitle">Yalda Night Festival</p>
-                
-                <form id="userForm" class="input-form">
-                    <label for="userId">
-                        <span class="emoji">👤</span>
-                        Enter your Telegram User ID
-                    </label>
-                    <input 
-                        type="text" 
-                        id="userId" 
-                        name="userId" 
-                        placeholder="123456789"
-                        pattern="[0-9]*"
-                        inputmode="numeric"
-                        required
-                    >
-                    <button type="submit" class="btn-submit">
-                        <span class="emoji">🎁</span>
-                        Enter the Festival
-                    </button>
-                </form>
-
-                <div class="footer">Made by ONVPN Team</div>
-            </div>
+    
+    <!-- Language Toggle Button -->
+    <button id="lang-toggle" class="lang-toggle" title="Switch Language">
+        <span class="lang-text" data-lang="fa">EN</span>
+        <span class="lang-text" data-lang="en">فا</span>
+    </button>
+    
+    <!-- Background container for falling fruits -->
+    <div id="fruits-container"></div>
+    
+    <!-- Seed burst container -->
+    <div id="seeds-container"></div>
+    
+    <!-- Main content wrapper -->
+    <div class="main-container">
+        
+        <!-- Yalda logo -->
+        <div id="logo-container" class="logo-container">
+            <img src="assets/logo.png" alt="Yalda Logo" class="logo">
         </div>
-
-        <!-- صفحه بازی -->
-        <div id="gameScreen" class="game-screen">
-            <div class="game-header">
-                <div class="user-info">
-                    <span>آیدی شما: </span>
-                    <span id="displayUserId" class="highlight"></span>
+        
+        <!-- Glass morphism card - main interaction area -->
+        <div id="glass-card" class="glass-card">
+            
+            <!-- Step 1: ID Input Section -->
+            <div id="id-input-section" class="card-section active">
+                <h1 class="title">
+                    <span data-lang="fa">شب یلدا مبارک</span>
+                    <span data-lang="en">Happy Yalda Night</span>
+                </h1>
+                <h2 class="subtitle">
+                    <span data-lang="fa">جشن شب چله</span>
+                    <span data-lang="en">Yalda Night Festival</span>
+                </h2>
+                
+                <p class="instruction">
+                    <span data-lang="fa">آیدی کاربری تلگرام خود را وارد کنید</span>
+                    <span data-lang="en">Enter your Telegram User ID</span>
+                    <button id="help-btn" class="help-icon" title="Help">❓</button>
+                </p>
+                
+                <!-- Help Content (Hidden by default) -->
+                <div id="help-content" class="help-content">
+                    <p data-lang="fa">
+                        به <a href="https://t.me/onvpnshopbot" target="_blank" class="bot-link">ربات</a> بروید و دکمه <span class="copyable">💼 حساب من</span> را بزنید یا دستور <span class="copyable">/wallet</span> را ارسال کنید. در ابتدای پاسخ ربات، آیدی کاربری شما نمایش داده می‌شود.
+                        <br><br>
+                        مثال:<br>
+                        <span class="copyable">🪪 User ID: 123456789</span>
+                    </p>
+                    <p data-lang="en">
+                        Go to the <a href="https://t.me/onvpnshopbot" target="_blank" class="bot-link">bot</a> and press the <span class="copyable">💼 My Account</span> button or send the <span class="copyable">/wallet</span> command. At the beginning of the bot's reply, your User ID is shown.
+                        <br><br>
+                        Example:<br>
+                        <span class="copyable">🪪 User ID: 123456789</span>
+                    </p>
                 </div>
-                <div class="score-info">
-                    <span>تعداد هدایا: </span>
-                    <span id="giftCount" class="highlight">0</span>
+                
+                <!-- User ID input with Paste button inside -->
+                <div class="input-group">
+                    <input 
+                        type="number" 
+                        id="telegram-id" 
+                        class="telegram-input" 
+                        placeholder="123456789"
+                        min="1"
+                        required
+                        inputmode="numeric"
+                        pattern="[0-9]+"
+                    >
+                    <button id="paste-btn" class="btn-paste-inline" title="Paste">📋</button>
+                </div>
+                
+                <!-- Validation message -->
+                <p id="validation-message" class="validation-message"></p>
+                
+                <!-- Confirm button -->
+                <button id="confirm-btn" class="btn btn-primary" disabled>
+                    <span data-lang="fa">ورود به جشنواره</span>
+                    <span data-lang="en">Enter the Festival</span>
+                </button>
+            </div>
+            
+            <!-- Step 2: Start Game Section -->
+            <div id="start-game-section" class="card-section">
+                <h2 class="title-small">
+                    <span data-lang="fa">آماده دریافت هدیه؟</span>
+                    <span data-lang="en">Ready to Receive Your Gift?</span>
+                </h2>
+                
+                <div class="instruction-box">
+                    <p class="game-instruction">
+                        <span data-lang="fa">
+                            🍉 روی یک هندوانه یا انار کلیک کنید تا هدیه خود را دریافت کنید! 🍇
+                        </span>
+                        <span data-lang="en">
+                            🍉 Click on a watermelon or pomegranate to receive your gift! 🍇
+                        </span>
+                    </p>
+                </div>
+                
+                <button id="start-game-btn" class="btn btn-start">
+                    <span data-lang="fa">🎮 شروع بازی</span>
+                    <span data-lang="en">🎮 Start Game</span>
+                </button>
+            </div>
+            
+            <!-- Step 3: Catch Fruit Section -->
+            <div id="catch-fruit-section" class="card-section">
+                <h2 class="title-game">
+                    <span data-lang="fa">🍉 روی یک هندوانه یا انار کلیک کنید تا ببرید! 🍇</span>
+                    <span data-lang="en">🍉 Click on a watermelon or pomegranate to win! 🍇</span>
+                </h2>
+                
+                <!-- Loading indicator -->
+                <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p class="loading-text">
+                        <span data-lang="fa">در حال دریافت هدیه...</span>
+                        <span data-lang="en">Receiving gift...</span>
+                    </p>
                 </div>
             </div>
             
-            <div id="gameArea" class="game-area">
-                <!-- میوه‌ها اینجا spawn می‌شن -->
-            </div>
-        </div>
-
-        <!-- مودال راهنما -->
-        <div id="guideModal" class="modal">
-            <div class="modal-content">
-                <h2>📖 راهنمای بازی</h2>
-                <div class="guide-list">
-                    <div class="guide-item">
-                        <span class="guide-emoji">🍉</span>
-                        <p>روی هندوانه‌ها و انارها کلیک کن</p>
-                    </div>
-                    <div class="guide-item">
-                        <span class="guide-emoji">💥</span>
-                        <p>میوه منفجر می‌شه و هدیه می‌گیری</p>
-                    </div>
-                    <div class="guide-item">
-                        <span class="guide-emoji">🎁</span>
-                        <p>کد هدیه رو کپی کن و استفاده کن</p>
-                    </div>
+            <!-- Step 4: Gift Display Section -->
+            <div id="gift-section" class="card-section">
+                <h2 class="title-success">🎁 
+                    <span data-lang="fa">تبریک!</span>
+                    <span data-lang="en">Congratulations!</span>
+                    🎁
+                </h2>
+                
+                <p class="gift-message">
+                    <span data-lang="fa">هدیه شما:</span>
+                    <span data-lang="en">Your Gift:</span>
+                </p>
+                
+                <!-- Gift code display box -->
+                <div class="gift-code-box">
+                    <code id="gift-code" class="gift-code">LOADING...</code>
+                    <button id="copy-btn" class="btn-copy">
+                        <span data-lang="fa">📋 کپی</span>
+                        <span data-lang="en">📋 Copy</span>
+                    </button>
                 </div>
-                <button id="startGameBtn" class="btn-primary">بزن بریم! 🚀</button>
+                
+                <!-- Gift description -->
+                <p id="gift-description" class="gift-description"></p>
+                
+                <!-- Check Telegram message -->
+                <p class="telegram-notice">
+                    <span data-lang="fa">پیام هدیه به تلگرام شما ارسال شد</span>
+                    <span data-lang="en">Gift message sent to your Telegram</span>
+                </p>
             </div>
+            
         </div>
-
-        <!-- مودال هدیه -->
-        <div id="giftModal" class="modal">
-            <div class="modal-content gift-modal">
-                <div class="gift-icon">🎁</div>
-                <h2 id="giftTitle" class="gift-title"></h2>
-                <div id="giftCode" class="gift-code"></div>
-                <p class="gift-hint">روی کد کلیک کنید تا کپی شود</p>
-                <button id="continueBtn" class="btn-primary">ادامه بازی 🎮</button>
-            </div>
+        
+        <!-- Footer credits -->
+        <div class="footer">
+            <p>Made by ONVPN Team</p>
         </div>
-
-        <!-- لودینگ -->
-        <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-        </div>
-
-        <!-- کانتینر ذرات -->
-        <div id="particleContainer" class="particle-container"></div>
+        
     </div>
-
-    <script src="js/game-v0.2.js"></script>
+    
+    <!-- Link to JavaScript file -->
+    <script src="js/script.js"></script>
+    
 </body>
 </html>
