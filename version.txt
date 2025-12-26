@@ -1,1 +1,9 @@
-Yalda Festival - v0.2 (base)
+Yalda Festival - v0.3
+
+## Stage 3 Complete - API Integration
+- Database: gifts & gift_logs tables ready with is_active, description, client_ip, user_agent
+- API: get-gift.php v0.3 with full CORS support and enhanced logging
+- Game: game-v0.3.js integrated with API, description display, improved UX
+- Frontend: index.html updated to load game-v0.3.js
+
+## Next: Stage 4 - Admin Panel & Testing
