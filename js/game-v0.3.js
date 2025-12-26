@@ -1,6 +1,6 @@
-// version: 0.2 - Game Logic (with old design)
-
+// version: 0.3 - Game Logic with API v0.3 Integration
 // ========== متغیرهای سراسری ==========
+
 let userId = '';
 let giftCount = 0;
 let gameActive = false;
@@ -13,282 +13,254 @@ const gameScreen = document.getElementById('gameScreen');
 const guideModal = document.getElementById('guideModal');
 const giftModal = document.getElementById('giftModal');
 const loading = document.getElementById('loading');
-
 const userIdInput = document.getElementById('userId');
 const startBtn = document.getElementById('startBtn');
 const startGameBtn = document.getElementById('startGameBtn');
 const continueBtn = document.getElementById('continueBtn');
-
 const gameArea = document.getElementById('gameArea');
 const displayUserId = document.getElementById('displayUserId');
 const giftCountDisplay = document.getElementById('giftCount');
 const particleContainer = document.getElementById('particleContainer');
-
 const giftTitle = document.getElementById('giftTitle');
 const giftCode = document.getElementById('giftCode');
+const giftDescription = document.getElementById('giftDescription');
 
 // تنظیمات بازی
 const FRUIT_TYPES = {
-    pomegranate: {
-        emoji: '🍎',
-        color: '#c62828',
-        particle: '🔴'
-    },
-    watermelon: {
-        emoji: '🍉',
-        color: '#e91e63',
-        particle: '⚪'
-    }
+    pomegranate: { emoji: '🍎', color: '#c62828', particle: '🔴' },
+    watermelon: { emoji: '🍉', color: '#2e7d32', particle: '🟢' }
 };
 
-const PRE_GAME_SPAWN_RATE = 2000; // هر 2 ثانیه (حالت نمایشی)
-const GAME_SPAWN_RATE = 1000;     // هر 1 ثانیه (حین بازی - 50% سریع‌تر)
+const CONFIG = {
+    preGameInterval: 1200,     // سرعت ریزش قبل از بازی (سریع‌تر 50%)
+    gameInterval: 1800,        // سرعت ریزش در حین بازی
+    fruitFallDuration: [5000, 8000],  // مدت سقوط میوه (تصادفی)
+    maxFruitsOnScreen: 15,
+    fruitSize: 60              // اندازه میوه به پیکسل
+};
 
-// ========== Event Listeners ==========
-startBtn.addEventListener('click', showGuide);
-startGameBtn.addEventListener('click', startGame);
-continueBtn.addEventListener('click', closeGiftModal);
-giftCode.addEventListener('click', copyGiftCode);
+// ========== مدیریت ورود کاربر ==========
 
-// ========== توابع اصلی ==========
-
-// نمایش راهنما
-function showGuide() {
-    userId = userIdInput.value.trim();
-    
-    if (!userId || !/^\d+$/.test(userId)) {
-        alert('لطفاً یک آیدی عددی معتبر وارد کنید');
+startBtn.addEventListener('click', () => {
+    const inputUserId = userIdInput.value.trim();
+    if (!inputUserId) {
+        alert('لطفا شناسه کاربری خود را وارد کنید');
         return;
     }
-    
-    guideModal.classList.add('active');
-    
-    // شروع ریزش میوه‌های نمایشی (غیرقابل کلیک)
-    startPreGameFruits();
-}
-
-// شروع بازی
-function startGame() {
-    guideModal.classList.remove('active');
-    welcomeScreen.classList.remove('active');
-    gameScreen.classList.add('active');
-    
+    userId = inputUserId;
     displayUserId.textContent = userId;
-    gameActive = true;
-    
-    // متوقف کردن میوه‌های نمایشی
-    if (preGameSpawnInterval) {
-        clearInterval(preGameSpawnInterval);
-    }
-    
-    // پاک کردن میوه‌های قبلی
-    gameArea.innerHTML = '';
-    
-    // شروع اسپاون میوه‌های بازی (با شدت بیشتر)
-    startGameFruits();
-}
+    welcomeScreen.style.display = 'none';
+    guideModal.style.display = 'flex';
+    startPreGameFruits();  // شروع ریزش میوه‌های غیرقابل تعامل
+});
 
-// ریزش میوه‌های نمایشی (قبل از شروع بازی)
+// ========== شروع بازی ==========
+
+startGameBtn.addEventListener('click', () => {
+    guideModal.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    gameActive = true;
+    clearInterval(preGameSpawnInterval);  // توقف ریزش قبل از بازی
+    startGameFruits();  // شروع ریزش میوه‌های قابل تعامل
+});
+
+continueBtn.addEventListener('click', () => {
+    giftModal.style.display = 'none';
+});
+
+// ========== ریزش میوه‌ها قبل از شروع بازی ==========
+
 function startPreGameFruits() {
     preGameSpawnInterval = setInterval(() => {
-        spawnFruit(false); // غیرقابل کلیک
-    }, PRE_GAME_SPAWN_RATE);
+        if (document.querySelectorAll('.fruit').length < CONFIG.maxFruitsOnScreen) {
+            spawnFruit(false);  // میوه غیرقابل کلیک
+        }
+    }, CONFIG.preGameInterval);
 }
 
-// ریزش میوه‌های بازی (قابل کلیک)
+// ========== ریزش میوه‌ها در حین بازی ==========
+
 function startGameFruits() {
     fruitSpawnInterval = setInterval(() => {
-        spawnFruit(true); // قابل کلیک
-    }, GAME_SPAWN_RATE);
-}
-
-// ساخت میوه
-function spawnFruit(clickable = true) {
-    const fruit = document.createElement('div');
-    fruit.className = 'fruit';
-    
-    // انتخاب تصادفی نوع میوه
-    const fruitType = Math.random() > 0.5 ? 'pomegranate' : 'watermelon';
-    const fruitData = FRUIT_TYPES[fruitType];
-    
-    fruit.textContent = fruitData.emoji;
-    fruit.style.fontSize = '50px';
-    fruit.dataset.type = fruitType;
-    
-    // موقعیت تصادفی افقی
-    const leftPos = Math.random() * (window.innerWidth - 60);
-    fruit.style.left = leftPos + 'px';
-    fruit.style.top = '-60px';
-    
-    gameArea.appendChild(fruit);
-    
-    // انیمیشن سقوط
-    animateFruit(fruit, clickable);
-}
-
-// انیمیشن سقوط میوه
-function animateFruit(fruit, clickable) {
-    const duration = 5000 + Math.random() * 2000; // 5-7 ثانیه
-    const startTime = Date.now();
-    const startTop = -60;
-    const endTop = window.innerHeight;
-    
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        const currentTop = startTop + (endTop - startTop) * progress;
-        fruit.style.top = currentTop + 'px';
-        
-        if (progress < 1 && gameArea.contains(fruit)) {
-            requestAnimationFrame(animate);
-        } else {
-            // میوه از صفحه خارج شد
-            if (fruit.parentNode) {
-                fruit.remove();
-            }
+        if (document.querySelectorAll('.fruit').length < CONFIG.maxFruitsOnScreen) {
+            spawnFruit(true);  // میوه قابل کلیک
         }
-    }
-    
-    animate();
-    
-    // اگر قابل کلیک باشه
-    if (clickable) {
-        fruit.addEventListener('click', () => onFruitClick(fruit));
-    }
+    }, CONFIG.gameInterval);
 }
 
-// کلیک روی میوه
-async function onFruitClick(fruit) {
+// ========== ایجاد میوه ==========
+
+function spawnFruit(interactive) {
+    const fruitType = Math.random() > 0.5 ? 'pomegranate' : 'watermelon';
+    const fruit = FRUIT_TYPES[fruitType];
+    
+    const fruitEl = document.createElement('div');
+    fruitEl.className = 'fruit';
+    fruitEl.textContent = fruit.emoji;
+    fruitEl.style.left = Math.random() * (window.innerWidth - CONFIG.fruitSize) + 'px';
+    fruitEl.style.fontSize = CONFIG.fruitSize + 'px';
+    fruitEl.dataset.type = fruitType;
+    
+    const fallDuration = Math.random() * 
+        (CONFIG.fruitFallDuration[1] - CONFIG.fruitFallDuration[0]) + 
+        CONFIG.fruitFallDuration[0];
+    
+    fruitEl.style.animation = `fall ${fallDuration}ms linear`;
+    
+    if (interactive && gameActive) {
+        fruitEl.style.cursor = 'pointer';
+        fruitEl.addEventListener('click', () => handleFruitClick(fruitEl, fruit));
+    }
+    
+    gameArea.appendChild(fruitEl);
+    
+    setTimeout(() => {
+        if (fruitEl.parentNode) fruitEl.remove();
+    }, fallDuration);
+}
+
+// ========== کلیک روی میوه ==========
+
+function handleFruitClick(fruitEl, fruit) {
     if (!gameActive) return;
     
-    const fruitType = fruit.dataset.type;
-    const fruitData = FRUIT_TYPES[fruitType];
-    const rect = fruit.getBoundingClientRect();
+    // انیمیشن انفجار میوه
+    fruitEl.style.transform = 'scale(1.5)';
+    fruitEl.style.opacity = '0';
     
-    // انیمیشن انفجار
-    fruit.classList.add('explode');
+    // ایجاد ذرات
+    createParticles(fruitEl.offsetLeft, fruitEl.offsetTop, fruit.particle);
     
-    // ساخت ذرات (دانه‌ها)
-    createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, fruitData.particle);
+    setTimeout(() => fruitEl.remove(), 300);
     
-    // حذف میوه بعد از انیمیشن
-    setTimeout(() => {
-        if (fruit.parentNode) {
-            fruit.remove();
-        }
-    }, 600);
-    
-    // فراخوانی API برای دریافت هدیه
-    await fetchGift();
+    // دریافت هدیه از API
+    fetchGift();
 }
 
-// ساخت ذرات انفجار
-function createParticles(x, y, emoji) {
-    const particleCount = 15;
-    
-    for (let i = 0; i < particleCount; i++) {
+// ========== ایجاد ذرات انفجار ==========
+
+function createParticles(x, y, particleEmoji) {
+    for (let i = 0; i < 12; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
-        particle.textContent = emoji;
-        particle.style.fontSize = '20px';
+        particle.textContent = particleEmoji;
         particle.style.left = x + 'px';
         particle.style.top = y + 'px';
         
-        const angle = (Math.PI * 2 * i) / particleCount;
-        const velocity = 100 + Math.random() * 100;
-        const vx = Math.cos(angle) * velocity;
-        const vy = Math.sin(angle) * velocity;
+        const angle = (Math.PI * 2 * i) / 12;
+        const distance = 100 + Math.random() * 50;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
         
-        particle.style.setProperty('--x', vx + 'px');
-        particle.style.setProperty('--y', vy + 'px');
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
         
         particleContainer.appendChild(particle);
         
-        setTimeout(() => {
-            particle.remove();
-        }, 1000);
+        setTimeout(() => particle.remove(), 1000);
     }
 }
 
-// دریافت هدیه از API
+// ========== دریافت هدیه از API ==========
+
 async function fetchGift() {
-    loading.classList.remove('hidden');
+    loading.style.display = 'flex';
     
     try {
-        const formData = new FormData();
-        formData.append('user_id', userId);
-        
-        const response = await fetch('api/get-gift.php', {
+        const response = await fetch('/api/get-gift.php', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user_id: userId })
         });
         
         const data = await response.json();
         
-        loading.classList.add('hidden');
+        loading.style.display = 'none';
         
-        if (data.success) {
-            showGiftModal(data.gift);
+        if (data.success && data.gift) {
             giftCount++;
             giftCountDisplay.textContent = giftCount;
+            showGiftModal(data.gift);
         } else {
-            alert('خطا: ' + data.message);
+            alert(data.message || 'خطا در دریافت هدیه');
         }
     } catch (error) {
-        loading.classList.add('hidden');
+        loading.style.display = 'none';
+        console.error('API Error:', error);
         alert('خطا در ارتباط با سرور');
-        console.error(error);
     }
 }
 
-// نمایش مودال هدیه
+// ========== نمایش مودال هدیه ==========
+
 function showGiftModal(gift) {
-    giftTitle.textContent = gift.title;
+    giftTitle.textContent = gift.name;
     giftCode.textContent = gift.code;
-    giftModal.classList.add('active');
     
-    // متوقف کردن بازی موقتاً
-    gameActive = false;
+    // نمایش توضیحات اگر موجود باشد
+    if (gift.description && giftDescription) {
+        giftDescription.textContent = gift.description;
+        giftDescription.style.display = 'block';
+    } else if (giftDescription) {
+        giftDescription.style.display = 'none';
+    }
+    
+    giftModal.style.display = 'flex';
+    
+    // انیمیشن ورود مودال
+    giftModal.querySelector('.modal-content').style.animation = 'slideIn 0.3s ease-out';
 }
 
-// بستن مودال هدیه و ادامه بازی
-function closeGiftModal() {
-    giftModal.classList.remove('active');
-    gameActive = true;
-}
+// ========== کپی کد هدیه ==========
 
-// کپی کردن کد هدیه
 function copyGiftCode() {
     const code = giftCode.textContent;
-    
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(code).then(() => {
-            // تغییر موقت متن برای نشان دادن کپی شدن
-            const originalText = giftCode.textContent;
-            giftCode.textContent = '✅ کپی شد!';
-            setTimeout(() => {
-                giftCode.textContent = originalText;
-            }, 1500);
-        });
-    } else {
-        // روش قدیمی برای مرورگرهای قدیمی
-        const textArea = document.createElement('textarea');
-        textArea.value = code;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        textArea.remove();
-        
-        const originalText = giftCode.textContent;
-        giftCode.textContent = '✅ کپی شد!';
-        setTimeout(() => {
-            giftCode.textContent = originalText;
-        }, 1500);
-    }
+    navigator.clipboard.writeText(code).then(() => {
+        alert('کد هدیه کپی شد: ' + code);
+    }).catch(err => {
+        console.error('Copy failed:', err);
+    });
 }
 
-// ========== شروع اولیه ==========
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎁 جشنواره شب یلدا - نسخه 0.2');
-});
+// ========== انیمیشن‌های CSS ==========
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fall {
+        from { top: -100px; transform: rotate(0deg); }
+        to { top: 100vh; transform: rotate(360deg); }
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .fruit {
+        position: absolute;
+        transition: transform 0.3s, opacity 0.3s;
+        z-index: 10;
+        user-select: none;
+    }
+    
+    .particle {
+        position: absolute;
+        font-size: 20px;
+        animation: explode 1s ease-out forwards;
+        pointer-events: none;
+        z-index: 20;
+    }
+    
+    @keyframes explode {
+        to {
+            transform: translate(var(--tx), var(--ty));
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// ========== شروع خودکار ==========
+console.log('Game v0.3 loaded - API Integration Ready');
